@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Ideenflüsterer ✨ Gemeinsames Notizbuch</title>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <!-- Font Awesome (für Icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(145deg, #fef9f0 0%, #fff5e6 100%);
+            color: #2d2a24;
+            padding: 20px;
+            line-height: 1.4;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        /* Header */
+        .hero {
+            background: #ffedd5;
+            border-radius: 64px;
+            padding: 28px 32px;
+            margin-bottom: 32px;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.05);
+            border: 1px solid #ffdeae;
+            backdrop-filter: blur(2px);
+        }
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #b45309, #d97706);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.5px;
+        }
+        .sub {
+            color: #78716c;
+            margin-top: 8px;
+            font-size: 1.1rem;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .btn-gross {
+            background: #ea580c;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 60px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .btn-gross:hover {
+            background: #c2410c;
+            transform: scale(0.97);
+        }
+        .btn-secondary {
+            background: #fde68a;
+            color: #78350f;
+            padding: 10px 20px;
+            border-radius: 40px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        /* Projekte als Karten – klar und groß */
+        .projekte-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+        }
+        .projekt-karte {
+            background: #ffffffdd;
+            backdrop-filter: blur(4px);
+            border-radius: 48px;
+            padding: 24px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+            border: 1px solid #fde68a;
+            transition: all 0.2s;
+        }
+        .projekt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+            border-bottom: 3px dashed #fed7aa;
+            padding-bottom: 12px;
+        }
+        .projekt-titel {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: none;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 40px;
+            width: 60%;
+            color: #7c2d12;
+        }
+        .btn-rund {
+            background: #fed7aa;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .seiten-bereich {
+            margin: 20px 0;
+        }
+        .seite-item {
+            background: #fff7ed;
+            border-radius: 32px;
+            padding: 18px;
+            margin-bottom: 16px;
+            transition: 0.1s;
+            border: 1px solid #ffedd5;
+        }
+        .seite-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .seite-titel {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #9a3412;
+        }
+        .seite-inhalt {
+            margin: 12px 0;
+            color: #44403c;
+            white-space: pre-wrap;
+            font-size: 1rem;
+            background: #fffbeb;
+            padding: 12px;
+            border-radius: 24px;
+        }
+        .kommentar-bereich {
+            margin-top: 16px;
+            background: #fef3c7;
+            padding: 14px;
+            border-radius: 32px;
+        }
+        .kommentar {
+            background: white;
+            border-radius: 28px;
+            padding: 8px 16px;
+            margin: 6px 0;
+            font-size: 0.9rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        input, textarea {
+            width: 100%;
+            padding: 14px;
+            border-radius: 48px;
+            border: 1px solid #fed7aa;
+            background: #fffaf2;
+            font-size: 1rem;
+            margin: 8px 0;
+        }
+        button {
+            font-family: inherit;
+        }
+        .flex-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        hr {
+            margin: 18px 0;
+            border-color: #ffedd5;
+        }
+        @media (max-width: 700px) {
+            body { padding: 12px; }
+            .projekt-titel { font-size: 1.4rem; width: 100%; }
+            .btn-gross { padding: 12px 18px; font-size: 1rem; }
+        }
+        .zitat {
+            font-style: italic;
+            color: #b45309;
+        }
+        i {
+            margin-right: 6px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="hero">
+        <h1><i class="fas fa-feather-alt"></i> Gedankenflügel <span style="font-size:1.2rem;">✨</span></h1>
+        <div class="sub">
+            <span><i class="fas fa-users"></i> Gemeinsames Wissens- und Ideenboard</span>
+            <span class="zitat"><i class="fas fa-lightbulb"></i> „Kreativität trifft Struktur – für alle, die etwas bewegen wollen.“</span>
+        </div>
+    </div>
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 24px;">
+        <button class="btn-gross" id="neuesProjektBtn"><i class="fas fa-plus-circle"></i> Neues Projekt</button>
+    </div>
+    <div id="projekteContainer" class="projekte-grid"></div>
+</div>
+
+<script>
+    // Firebase Config (deine Daten – direkt eingefügt)
+    const firebaseConfig = {
+        apiKey: "AIzaSyBw-RNTFz5ACXOZtMHvLWjHYi_HSerw26g",
+        authDomain: "collaborativenotes-121ee.firebaseapp.com",
+        projectId: "collaborativenotes-121ee",
+        storageBucket: "collaborativenotes-121ee.firebasestorage.app",
+        messagingSenderId: "337213017720",
+        appId: "1:337213017720:web:ea51465f8a0781f86de78d",
+        measurementId: "G-E28VZC2WT6"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const projekteRef = db.collection("projects");
+    const seitenRef = db.collection("pages");
+    const kommentareRef = db.collection("comments");
+
+    // Hilfsfunktion HTML-escaped
+    function escapeHtml(str) {
+        if (!str) return "";
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // Projekt hinzufügen
+    async function neuesProjekt() {
+        let name = prompt("Wie heißt das neue Projekt? (z.B. „Marketingideen“, „Reisepläne“)");
+        if (!name || name.trim() === "") return;
+        await projekteRef.add({
+            name: name.trim(),
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    }
+
+    // Projekt löschen
+    async function loescheProjekt(projektId) {
+        if (!confirm("⚠️ Projekt und alle Seiten & Kommentare endgültig löschen?")) return;
+        const seitenSnap = await seitenRef.where("projectId", "==", projektId).get();
+        for (const doc of seitenSnap.docs) {
+            const kommentareSnap = await kommentareRef.where("pageId", "==", doc.id).get();
+            for (const kd of kommentareSnap.docs) await kd.ref.delete();
+            await doc.ref.delete();
+        }
+        const projektKommentare = await kommentareRef.where("projectId", "==", projektId).where("pageId", "==", null).get();
+        for (const kd of projektKommentare.docs) await kd.ref.delete();
+        await projekteRef.doc(projektId).delete();
+    }
+
+    // Seite hinzufügen
+    async function fuegeSeiteHinzu(projektId) {
+        let titel = prompt("Titel der neuen Seite (z.B. „Brainstorming“, „To-Do“):");
+        if (!titel) titel = "Neue Idee";
+        await seitenRef.add({
+            title: titel,
+            content: "",
+            projectId: projektId,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    }
+
+    // Seite löschen
+    async function loescheSeite(seiteId) {
+        if (!confirm("Seite entfernen? Kommentare verschwinden mit.")) return;
+        const kommentareSnap = await kommentareRef.where("pageId", "==", seiteId).get();
+        for (const kd of kommentareSnap.docs) await kd.ref.delete();
+        await seitenRef.doc(seiteId).delete();
+    }
+
+    // Seite bearbeiten
+    function bearbeiteSeite(seiteId, aktuellerTitel, aktuellerInhalt) {
+        const neuerTitel = prompt("Titel bearbeiten:", aktuellerTitel);
+        if (neuerTitel !== null) seitenRef.doc(seiteId).update({ title: neuerTitel });
+        const neuerInhalt = prompt("Inhalt bearbeiten:", aktuellerInhalt);
+        if (neuerInhalt !== null) seitenRef.doc(seiteId).update({ content: neuerInhalt });
+    }
+
+    // Kommentar zum Projekt (allgemein)
+    async function addProjektKommentar(projektId, inputId) {
+        const input = document.getElementById(inputId);
+        const text = input.value.trim();
+        if (!text) return;
+        await kommentareRef.add({
+            text: text,
+            projectId: projektId,
+            pageId: null,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        input.value = "";
+    }
+
+    // Kommentar zu einer Seite
+    async function addSeitenKommentar(seiteId, projektId, inputId) {
+        const input = document.getElementById(inputId);
+        const text = input.value.trim();
+        if (!text) return;
+        await kommentareRef.add({
+            text: text,
+            pageId: seiteId,
+            projectId: projektId,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        input.value = "";
+    }
+
+    // Haupt-Rendering: alle Projekte + Live-Listener
+    function renderProjekte() {
+        projekteRef.orderBy("createdAt", "desc").onSnapshot(snapshot => {
+            const container = document.getElementById("projekteContainer");
+            container.innerHTML = "";
+            if (snapshot.empty) {
+                container.innerHTML = `<div style="background:#fff3e0; border-radius:64px; padding:48px; text-align:center;"><i class="fas fa-tree" style="font-size:48px;"></i><p style="margin-top:16px;">✨ Noch keine Projekte – klicke auf „Neues Projekt“ und starte deine Ideensammlung!</p></div>`;
+                return;
+            }
+            snapshot.forEach(projDoc => {
+                const projektId = projDoc.id;
+                const projektName = projDoc.data().name || "Ohne Titel";
+                const projektDiv = document.createElement("div");
+                projektDiv.className = "projekt-karte";
+                projektDiv.innerHTML = `
+                    <div class="projekt-header">
+                        <input type="text" class="projekt-titel" value="${escapeHtml(projektName)}" data-id="${projektId}">
+                        <button class="btn-rund" onclick="loescheProjekt('${projektId}')"><i class="fas fa-trash-alt"></i> Projekt löschen</button>
+                    </div>
+                    <div id="seitenListe-${projektId}" class="seiten-bereich">📄 Seiten werden geladen...</div>
+                    <div class="flex-row" style="justify-content: space-between; margin-top: 12px;">
+                        <button class="btn-secondary" onclick="fuegeSeiteHinzu('${projektId}')"><i class="fas fa-plus"></i> Neue Seite</button>
+                    </div>
+                    <hr>
+                    <div><i class="fas fa-comment-dots"></i> Projekt-Kommentare:</div>
+                    <div id="projektKommentare-${projektId}"></div>
+                    <div class="flex-row">
+                        <input type="text" id="projKommentarInput-${projektId}" placeholder="Dein Kommentar zum Projekt...">
+                        <button class="btn-secondary" onclick="addProjektKommentar('${projektId}', 'projKommentarInput-${projektId}')">Senden</button>
+                    </div>
+                `;
+                container.appendChild(projektDiv);
+                // Live-Umbenennung des Projekts
+                const titelInput = projektDiv.querySelector(".projekt-titel");
+                titelInput.addEventListener("change", (e) => {
+                    const neuerName = e.target.value.trim();
+                    if (neuerName) projekteRef.doc(projektId).update({ name: neuerName });
+                });
+                // Seiten laden
+                ladeSeitenFuerProjekt(projektId);
+                ladeProjektKommentare(projektId);
+            });
+        });
+    }
+
+    function ladeSeitenFuerProjekt(projektId) {
+        const container = document.getElementById(`seitenListe-${projektId}`);
+        if (!container) return;
+        seitenRef.where("projectId", "==", projektId).orderBy("createdAt", "asc").onSnapshot(snapshot => {
+            if (snapshot.empty) {
+                container.innerHTML = `<div style="background:#fef3c7; border-radius:32px; padding:20px; text-align:center;">📭 Noch keine Seiten. Erstelle deine erste Seite!</div>`;
+                return;
+            }
+            container.innerHTML = "";
+            snapshot.forEach(seiteDoc => {
+                const seite = seiteDoc.data();
+                const seiteId = seiteDoc.id;
+                const seiteDiv = document.createElement("div");
+                seiteDiv.className = "seite-item";
+                seiteDiv.innerHTML = `
+                    <div class="seite-header">
+                        <span class="seite-titel"><i class="fas fa-file-alt"></i> ${escapeHtml(seite.title)}</span>
+                        <div>
+                            <button class="btn-rund" onclick="bearbeiteSeite('${seiteId}', '${escapeHtml(seite.title)}', '${escapeHtml(seite.content)}')"><i class="fas fa-edit"></i> Bearbeiten</button>
+                            <button class="btn-rund" onclick="loescheSeite('${seiteId}')"><i class="fas fa-trash"></i> Löschen</button>
+                        </div>
+                    </div>
+                    <div class="seite-inhalt">${escapeHtml(seite.content) || "<span style='opacity:0.6;'>✏️ Klick auf Bearbeiten um Ideen zu notieren...</span>"}</div>
+                    <div class="kommentar-bereich">
+                        <div id="seitenKommentare-${seiteId}"></div>
+                        <div class="flex-row">
+                            <input type="text" id="seiteKommentarInput-${seiteId}" placeholder="Kommentar zu dieser Seite...">
+                            <button class="btn-secondary" onclick="addSeitenKommentar('${seiteId}', '${projektId}', 'seiteKommentarInput-${seiteId}')"><i class="fas fa-paper-plane"></i> Posten</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(seiteDiv);
+                ladeSeitenKommentare(seiteId);
+            });
+        });
+    }
+
+    function ladeSeitenKommentare(seiteId) {
+        const container = document.getElementById(`seitenKommentare-${seiteId}`);
+        if (!container) return;
+        kommentareRef.where("pageId", "==", seiteId).orderBy("timestamp", "asc").onSnapshot(snapshot => {
+            container.innerHTML = "";
+            if (snapshot.empty) {
+                container.innerHTML = `<div style="font-size:0.8rem; color:#a16207;">💬 Noch keine Kommentare – teile deine Gedanken!</div>`;
+                return;
+            }
+            snapshot.forEach(doc => {
+                const kom = doc.data();
+                const komDiv = document.createElement("div");
+                komDiv.className = "kommentar";
+                komDiv.innerText = kom.text;
+                container.appendChild(komDiv);
+            });
+        });
+    }
+
+    function ladeProjektKommentare(projektId) {
+        const container = document.getElementById(`projektKommentare-${projektId}`);
+        if (!container) return;
+        kommentareRef.where("projectId", "==", projektId).where("pageId", "==", null).orderBy("timestamp", "asc").onSnapshot(snapshot => {
+            container.innerHTML = "";
+            if (snapshot.empty) {
+                container.innerHTML = `<div style="color:#b45309; font-size:0.85rem;">✨ Noch keine Projektkommentare – inspirier andere.</div>`;
+                return;
+            }
+            snapshot.forEach(doc => {
+                const kom = doc.data();
+                const komDiv = document.createElement("div");
+                komDiv.className = "kommentar";
+                komDiv.innerText = kom.text;
+                container.appendChild(komDiv);
+            });
+        });
+    }
+
+    document.getElementById("neuesProjektBtn").addEventListener("click", neuesProjekt);
+    renderProjekte();
+</script>
+</body>
+</html>
