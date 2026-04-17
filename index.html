@@ -3,203 +3,269 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Einfach & Klar</title>
+    <title>Klare Ideen - Einfach & Schön</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f5f5f5; padding: 20px; }
-        .projekt { background: white; border-radius: 20px; padding: 16px; margin-bottom: 20px; }
-        button { background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 20px; margin: 4px; cursor: pointer; }
-        .seite { background: #f9f9f9; border-radius: 16px; padding: 12px; margin-top: 12px; }
-        textarea { width: 100%; padding: 8px; border-radius: 12px; border: 1px solid #ccc; margin: 8px 0; }
-        .kommentar { background: #e9ecef; border-radius: 12px; padding: 6px; margin: 4px 0; }
+        body {
+            font-family: 'Segoe UI', system-ui;
+            background: #fef7e0;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: auto;
+        }
+        button {
+            background: #f97316;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin: 8px 4px;
+            cursor: pointer;
+        }
+        .projekt {
+            background: white;
+            border-radius: 32px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .seite {
+            background: #fffaf0;
+            border-radius: 24px;
+            padding: 16px;
+            margin: 16px 0;
+            border: 1px solid #ffedd5;
+        }
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+            font-size: 1rem;
+            border-radius: 24px;
+            border: 1px solid #fed7aa;
+            background: #ffffff;
+            font-family: monospace;
+        }
+        .kommentar {
+            background: #fef3c7;
+            border-radius: 20px;
+            padding: 8px 12px;
+            margin: 6px 0;
+        }
+        input {
+            width: 80%;
+            padding: 10px;
+            border-radius: 40px;
+            border: 1px solid #fed7aa;
+            margin: 5px 0;
+        }
+        hr {
+            margin: 16px 0;
+        }
     </style>
 </head>
 <body>
-    <h1>📘 Gemeinsames Notizbuch</h1>
-    <button id="neuesProjektBtn">➕ Neues Projekt</button>
-    <div id="projekteContainer"></div>
+<div class="container">
+    <h1>✨ Gemeinsames Ideenbuch</h1>
+    <button id="neuesProjekt">➕ Neues Projekt</button>
+    <div id="projekteListe"></div>
+</div>
 
-    <script>
-        // Firebase Config
-        const firebaseConfig = {
-            apiKey: "AIzaSyBw-RNTFz5ACXOZtMHvLWjHYi_HSerw26g",
-            authDomain: "collaborativenotes-121ee.firebaseapp.com",
-            projectId: "collaborativenotes-121ee",
-            storageBucket: "collaborativenotes-121ee.firebasestorage.app",
-            messagingSenderId: "337213017720",
-            appId: "1:337213017720:web:ea51465f8a0781f86de78d"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+<script>
+    // ---------- DEINE FIREBASE DATEN (aus deinem Screenshot, aber sicherheitshalber eingefügt) ----------
+    const firebaseConfig = {
+        apiKey: "AIzaSyBw-RNTFz5ACXOZtMHvLWjHYi_HSerw26g",
+        authDomain: "collaborativenotes-121ee.firebaseapp.com",
+        projectId: "collaborativenotes-121ee",
+        storageBucket: "collaborativenotes-121ee.firebasestorage.app",
+        messagingSenderId: "337213017720",
+        appId: "1:337213017720:web:ea51465f8a0781f86de78d"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-        // Referenzen
-        const projekteRef = db.collection("projects");
-        const seitenRef = db.collection("pages");
-        const kommentareRef = db.collection("comments");
+    // ---------- Hilfsfunktion ----------
+    function esc(str) {
+        if (!str) return "";
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
 
-        // Hilfsfunktionen
-        function esc(str) { return str ? str.replace(/[&<>]/g, function(m){return m=='&'?'&amp;':m=='<'?'&lt;':'&gt;';}) : ""; }
+    // ---------- Projekt erstellen ----------
+    document.getElementById("neuesProjekt").onclick = async () => {
+        let name = prompt("Name des Projekts:");
+        if (name && name.trim()) {
+            await db.collection("projects").add({ name: name.trim(), createdAt: new Date() });
+        }
+    };
 
-        // Neues Projekt
-        document.getElementById("neuesProjektBtn").onclick = async () => {
-            let name = prompt("Projektname:");
-            if (name) await projekteRef.add({ name: name.trim(), createdAt: new Date() });
-        };
+    // ---------- Projekt löschen ----------
+    window.loescheProjekt = async (projId) => {
+        if (!confirm("Projekt und alle Seiten löschen?")) return;
+        let seiten = await db.collection("pages").where("projectId", "==", projId).get();
+        for (let s of seiten.docs) {
+            let kommentare = await db.collection("comments").where("pageId", "==", s.id).get();
+            for (let k of kommentare.docs) await k.ref.delete();
+            await s.ref.delete();
+        }
+        let projKommentare = await db.collection("comments").where("projectId", "==", projId).where("pageId", "==", null).get();
+        for (let k of projKommentare.docs) await k.ref.delete();
+        await db.collection("projects").doc(projId).delete();
+    };
 
-        // Projekt löschen
-        window.loescheProjekt = async (projId) => {
-            if (!confirm("Löschen?")) return;
-            const seitenSnap = await seitenRef.where("projectId", "==", projId).get();
-            for (let s of seitenSnap.docs) {
-                let komSnap = await kommentareRef.where("pageId", "==", s.id).get();
-                for (let k of komSnap.docs) await k.ref.delete();
-                await s.ref.delete();
-            }
-            let projKom = await kommentareRef.where("projectId", "==", projId).where("pageId", "==", null).get();
-            for (let k of projKom.docs) await k.ref.delete();
-            await projekteRef.doc(projId).delete();
-        };
+    // ---------- Seite hinzufügen ----------
+    window.neueSeite = async (projId) => {
+        let titel = prompt("Titel der Seite:");
+        if (!titel) titel = "Neue Idee";
+        await db.collection("pages").add({ title: titel, content: "", projectId: projId, createdAt: new Date() });
+    };
 
-        // Neue Seite
-        window.neueSeite = async (projId) => {
-            let titel = prompt("Titel der Seite:");
-            if (!titel) titel = "Neue Seite";
-            await seitenRef.add({ title: titel, content: "", projectId: projId, createdAt: new Date() });
-        };
+    // ---------- Seite löschen ----------
+    window.loescheSeite = async (seiteId) => {
+        if (!confirm("Seite löschen?")) return;
+        let kommentare = await db.collection("comments").where("pageId", "==", seiteId).get();
+        for (let k of kommentare.docs) await k.ref.delete();
+        await db.collection("pages").doc(seiteId).delete();
+    };
 
-        // Seite löschen
-        window.loescheSeite = async (seiteId) => {
-            if (!confirm("Seite löschen?")) return;
-            let komSnap = await kommentareRef.where("pageId", "==", seiteId).get();
-            for (let k of komSnap.docs) await k.ref.delete();
-            await seitenRef.doc(seiteId).delete();
-        };
+    // ---------- Inhalt speichern ----------
+    window.speichereInhalt = async (seiteId) => {
+        let textarea = document.getElementById(`inhalt-${seiteId}`);
+        if (textarea) {
+            await db.collection("pages").doc(seiteId).update({ content: textarea.value });
+            alert("Gespeichert!");
+        }
+    };
 
-        // Inhalt speichern
-        window.speichereInhalt = async (seiteId) => {
-            let textarea = document.getElementById(`inhalt-${seiteId}`);
-            if (textarea) await seitenRef.doc(seiteId).update({ content: textarea.value });
-        };
+    // ---------- Kommentar zu Seite ----------
+    window.addSeitenKommentar = async (seiteId, projId) => {
+        let input = document.getElementById(`kommentarInput-${seiteId}`);
+        let text = input.value.trim();
+        if (text) {
+            await db.collection("comments").add({ text: text, pageId: seiteId, projectId: projId, timestamp: new Date() });
+            input.value = "";
+        }
+    };
 
-        // Kommentar zu Seite
-        window.addSeitenKommentar = async (seiteId, projId) => {
-            let input = document.getElementById(`kommentarInput-${seiteId}`);
-            let text = input.value.trim();
-            if (text) {
-                await kommentareRef.add({ text: text, pageId: seiteId, projectId: projId, timestamp: new Date() });
-                input.value = "";
-            }
-        };
+    // ---------- Kommentar zu Projekt ----------
+    window.addProjektKommentar = async (projId) => {
+        let input = document.getElementById(`projKommentar-${projId}`);
+        let text = input.value.trim();
+        if (text) {
+            await db.collection("comments").add({ text: text, pageId: null, projectId: projId, timestamp: new Date() });
+            input.value = "";
+        }
+    };
 
-        // Kommentar zu Projekt
-        window.addProjektKommentar = async (projId) => {
-            let input = document.getElementById(`projKommentar-${projId}`);
-            let text = input.value.trim();
-            if (text) {
-                await kommentareRef.add({ text: text, pageId: null, projectId: projId, timestamp: new Date() });
-                input.value = "";
-            }
-        };
+    // ---------- Hauptfunktion: Alle Projekte anzeigen (live) ----------
+    db.collection("projects").orderBy("createdAt", "desc").onSnapshot((snapshot) => {
+        const container = document.getElementById("projekteListe");
+        container.innerHTML = "";
+        if (snapshot.empty) {
+            container.innerHTML = "<p>✨ Keine Projekte. Klicke auf 'Neues Projekt'.</p>";
+            return;
+        }
+        snapshot.forEach(projDoc => {
+            const projId = projDoc.id;
+            const projName = projDoc.data().name || "Unbenannt";
+            const projDiv = document.createElement("div");
+            projDiv.className = "projekt";
+            projDiv.innerHTML = `
+                <div style="display: flex; justify-content: space-between;">
+                    <h2>📁 ${esc(projName)}</h2>
+                    <button onclick="loescheProjekt('${projId}')">🗑️ Löschen</button>
+                </div>
+                <button onclick="neueSeite('${projId}')">➕ Neue Seite</button>
+                <div id="seiten-${projId}" style="margin-top: 16px;"></div>
+                <hr>
+                <div><strong>💬 Projekt-Kommentare</strong></div>
+                <div id="projKommentare-${projId}"></div>
+                <div>
+                    <input type="text" id="projKommentar-${projId}" placeholder="Kommentar zum Projekt...">
+                    <button onclick="addProjektKommentar('${projId}')">Senden</button>
+                </div>
+            `;
+            container.appendChild(projDiv);
 
-        // Hauptliste der Projekte (mit Live-Listener)
-        projekteRef.orderBy("createdAt", "desc").onSnapshot((snapshot) => {
-            const container = document.getElementById("projekteContainer");
-            container.innerHTML = "";
-            snapshot.forEach(projDoc => {
-                const projId = projDoc.id;
-                const projName = projDoc.data().name || "Unbenannt";
-                const projDiv = document.createElement("div");
-                projDiv.className = "projekt";
-                projDiv.innerHTML = `
-                    <div style="display: flex; justify-content: space-between;">
-                        <strong>📁 ${esc(projName)}</strong>
-                        <button onclick="loescheProjekt('${projId}')">Löschen</button>
-                    </div>
-                    <button onclick="neueSeite('${projId}')">➕ Seite hinzufügen</button>
-                    <div id="seitenListe-${projId}" style="margin-top: 10px;"></div>
-                    <hr>
-                    <div><strong>Projekt-Kommentare:</strong></div>
-                    <div id="projKommentare-${projId}"></div>
-                    <div>
-                        <input type="text" id="projKommentar-${projId}" placeholder="Kommentar...">
-                        <button onclick="addProjektKommentar('${projId}')">Senden</button>
-                    </div>
-                `;
-                container.appendChild(projDiv);
-                
-                // Seiten für dieses Projekt
-                seitenRef.where("projectId", "==", projId).orderBy("createdAt", "asc").onSnapshot(seitenSnap => {
-                    const seitenContainer = document.getElementById(`seitenListe-${projId}`);
-                    if (!seitenContainer) return;
-                    if (seitenSnap.empty) {
-                        seitenContainer.innerHTML = "<p>Keine Seiten.</p>";
-                        return;
-                    }
-                    seitenContainer.innerHTML = "";
-                    seitenSnap.forEach(seiteDoc => {
-                        const seite = seiteDoc.data();
-                        const seiteId = seiteDoc.id;
-                        const seiteDiv = document.createElement("div");
-                        seiteDiv.style.border = "1px solid #ddd";
-                        seiteDiv.style.padding = "10px";
-                        seiteDiv.style.margin = "10px 0";
-                        seiteDiv.style.borderRadius = "12px";
-                        seiteDiv.innerHTML = `
-                            <div style="display: flex; justify-content: space-between;">
-                                <strong>📄 ${esc(seite.title)}</strong>
-                                <button onclick="loescheSeite('${seiteId}')">Seite löschen</button>
-                            </div>
-                            <textarea id="inhalt-${seiteId}" rows="4">${esc(seite.content || "")}</textarea>
-                            <button onclick="speichereInhalt('${seiteId}')">Inhalt speichern</button>
-                            <div><strong>Kommentare:</strong></div>
-                            <div id="kommentare-${seiteId}"></div>
-                            <div>
-                                <input type="text" id="kommentarInput-${seiteId}" placeholder="Kommentar...">
-                                <button onclick="addSeitenKommentar('${seiteId}', '${projId}')">Posten</button>
-                            </div>
-                        `;
-                        seitenContainer.appendChild(seiteDiv);
-                        
-                        // Kommentare für diese Seite
-                        kommentareRef.where("pageId", "==", seiteId).orderBy("timestamp", "asc").onSnapshot(komSnap => {
-                            const komContainer = document.getElementById(`kommentare-${seiteId}`);
-                            if (!komContainer) return;
-                            komContainer.innerHTML = "";
-                            if (komSnap.empty) {
-                                komContainer.innerHTML = "<p>Keine Kommentare.</p>";
-                                return;
-                            }
-                            komSnap.forEach(komDoc => {
-                                const kom = komDoc.data();
-                                const komDiv = document.createElement("div");
-                                komDiv.className = "kommentar";
-                                komDiv.innerText = kom.text;
-                                komContainer.appendChild(komDiv);
-                            });
+            // Seiten laden
+            db.collection("pages").where("projectId", "==", projId).orderBy("createdAt", "asc").onSnapshot(seitenSnap => {
+                const seitenContainer = document.getElementById(`seiten-${projId}`);
+                if (!seitenContainer) return;
+                if (seitenSnap.empty) {
+                    seitenContainer.innerHTML = "<p>📭 Keine Seiten. Erstelle eine neue Seite.</p>";
+                    return;
+                }
+                seitenContainer.innerHTML = "";
+                seitenSnap.forEach(seiteDoc => {
+                    const seite = seiteDoc.data();
+                    const seiteId = seiteDoc.id;
+                    const seiteDiv = document.createElement("div");
+                    seiteDiv.className = "seite";
+                    seiteDiv.innerHTML = `
+                        <div style="display: flex; justify-content: space-between;">
+                            <h3>📄 ${esc(seite.title)}</h3>
+                            <button onclick="loescheSeite('${seiteId}')">❌ Seite löschen</button>
+                        </div>
+                        <textarea id="inhalt-${seiteId}" rows="4">${esc(seite.content || "")}</textarea>
+                        <button onclick="speichereInhalt('${seiteId}')">💾 Inhalt speichern</button>
+                        <div><strong>💬 Kommentare</strong></div>
+                        <div id="kommentare-${seiteId}"></div>
+                        <div>
+                            <input type="text" id="kommentarInput-${seiteId}" placeholder="Dein Kommentar...">
+                            <button onclick="addSeitenKommentar('${seiteId}', '${projId}')">Posten</button>
+                        </div>
+                    `;
+                    seitenContainer.appendChild(seiteDiv);
+
+                    // Kommentare der Seite laden
+                    db.collection("comments").where("pageId", "==", seiteId).orderBy("timestamp", "asc").onSnapshot(komSnap => {
+                        const komContainer = document.getElementById(`kommentare-${seiteId}`);
+                        if (!komContainer) return;
+                        komContainer.innerHTML = "";
+                        if (komSnap.empty) {
+                            komContainer.innerHTML = "<p>Noch keine Kommentare.</p>";
+                            return;
+                        }
+                        komSnap.forEach(komDoc => {
+                            const kom = komDoc.data();
+                            const komDiv = document.createElement("div");
+                            komDiv.className = "kommentar";
+                            komDiv.innerText = kom.text;
+                            komContainer.appendChild(komDiv);
                         });
                     });
                 });
-                
-                // Projekt-Kommentare
-                kommentareRef.where("projectId", "==", projId).where("pageId", "==", null).orderBy("timestamp", "asc").onSnapshot(komSnap => {
-                    const komContainer = document.getElementById(`projKommentare-${projId}`);
-                    if (!komContainer) return;
-                    komContainer.innerHTML = "";
-                    if (komSnap.empty) {
-                        komContainer.innerHTML = "<p>Keine Kommentare.</p>";
-                        return;
-                    }
-                    komSnap.forEach(komDoc => {
-                        const kom = komDoc.data();
-                        const komDiv = document.createElement("div");
-                        komDiv.className = "kommentar";
-                        komDiv.innerText = kom.text;
-                        komContainer.appendChild(komDiv);
-                    });
+            });
+
+            // Projekt-Kommentare laden
+            db.collection("comments").where("projectId", "==", projId).where("pageId", "==", null).orderBy("timestamp", "asc").onSnapshot(komSnap => {
+                const komContainer = document.getElementById(`projKommentare-${projId}`);
+                if (!komContainer) return;
+                komContainer.innerHTML = "";
+                if (komSnap.empty) {
+                    komContainer.innerHTML = "<p>Keine Kommentare.</p>";
+                    return;
+                }
+                komSnap.forEach(komDoc => {
+                    const kom = komDoc.data();
+                    const komDiv = document.createElement("div");
+                    komDiv.className = "kommentar";
+                    komDiv.innerText = kom.text;
+                    komContainer.appendChild(komDiv);
                 });
             });
         });
-    </script>
+    });
+</script>
 </body>
-</html>
+    </html> 
