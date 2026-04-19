@@ -12,58 +12,72 @@
             --accent-pink: #ffafbd;
             --accent-blue: #2193b0;
             --text-gold: #e0c3fc;
-            --text-dim: #999;
+            --text-dim: #888;
         }
 
         body {
             background-color: var(--bg-color);
+            background-image: radial-gradient(circle at top right, #1a0f1f, #0d0d0d);
             color: #fff;
             font-family: 'Montserrat', sans-serif;
             margin: 0; padding: 15px;
             display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh;
         }
 
         .header { text-align: center; margin-bottom: 25px; }
-        h1 { font-family: 'Dancing Script', cursive; font-size: 2.8em; color: var(--accent-pink); margin: 0; text-shadow: 0 0 15px rgba(255,175,189,0.3); }
-        
-        /* البحث */
+        h1 { font-family: 'Dancing Script', cursive; font-size: 2.8em; color: var(--accent-pink); margin: 0; }
+
         .search-container { width: 100%; max-width: 550px; margin-bottom: 20px; }
         .search-input {
-            width: 100%; padding: 12px 20px; border-radius: 50px; border: 1px solid #333;
+            width: 100%; padding: 14px 20px; border-radius: 50px; border: 1px solid #333;
             background: #1a1a1a; color: white; outline: none; box-sizing: border-box;
         }
 
-        /* بطاقة المنشور */
         .post-card {
             background: var(--card-bg); border-radius: 20px; padding: 20px;
-            margin-bottom: 25px; width: 100%; max-width: 550px;
+            margin-bottom: 30px; width: 100%; max-width: 550px;
             border: 1px solid rgba(255,255,255,0.03); box-sizing: border-box;
+            position: relative; overflow: hidden;
         }
 
-        .post-meta { font-size: 0.7em; color: var(--text-dim); margin-bottom: 8px; }
+        .post-meta { font-size: 0.7em; color: var(--text-dim); margin-bottom: 8px; display: block; }
         .post-title { font-size: 1.4em; font-weight: 600; color: var(--text-gold); margin-bottom: 10px; }
         .post-content { font-size: 1.05em; line-height: 1.6; color: #ddd; white-space: pre-wrap; margin-bottom: 15px; }
         
-        .post-img { width: 100%; border-radius: 12px; margin-bottom: 15px; }
+        /* إصلاح حجم الصورة */
+        .post-img { 
+            width: 100%; 
+            max-height: 350px; /* حجم محدد لا تتجاوزه الصورة مهما كانت دقتها */
+            object-fit: cover; /* لضمان عدم تشوه الصورة */
+            border-radius: 12px; 
+            margin-bottom: 15px; 
+            display: block;
+            background: #000; /* خلفية سوداء تظهر فقط إذا كانت الصورة شفافة */
+        }
+        /* إخفاء الصورة تماماً إذا كان الرابط مكسور لكي لا تظهر الأيقونة المزعجة */
+        .post-img:not([src]), .post-img[src=""] { display: none; }
 
-        /* التعليقات */
-        .comment-area { border-top: 1px solid #222; padding-top: 15px; margin-top: 15px; }
-        .comment-box { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 10px; margin-bottom: 8px; font-size: 0.9em; }
-        .comment-btns { font-size: 0.75em; color: var(--accent-blue); cursor: pointer; margin-top: 5px; opacity: 0.6; }
+        .comment-area { border-top: 1px solid #252525; padding-top: 15px; margin-top: 10px; }
+        .comment-box { 
+            background: rgba(255,255,255,0.03); padding: 10px; border-radius: 10px; 
+            margin-bottom: 8px; font-size: 0.9em; border-left: 2px solid var(--accent-pink);
+        }
 
-        /* المحرر */
+        .btn-action { background: none; border: none; font-size: 0.85em; cursor: pointer; font-weight: 500; padding: 8px 0; }
+        .btn-edit { color: var(--accent-blue); margin-right: 20px; }
+        .btn-delete { color: #ff4b2b; }
+
         .editor-view {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; display: none; flex-direction: column; padding: 20px; box-sizing: border-box; z-index: 1000;
+            background: #000; display: none; flex-direction: column; padding: 25px; box-sizing: border-box; z-index: 2000;
         }
-        .editor-view input, .editor-view textarea {
-            background: transparent; border: none; color: white; outline: none; width: 100%; margin-bottom: 15px;
-        }
+        .editor-view input, .editor-view textarea { background: transparent; border: none; color: white; outline: none; width: 100%; margin-bottom: 15px; }
 
         .floating-btn {
-            position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px;
+            position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px;
             border-radius: 50%; background: linear-gradient(45deg, var(--accent-blue), var(--accent-pink));
-            border: none; font-size: 1.8em; color: white; box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+            border: none; font-size: 2em; color: white; cursor: pointer; z-index: 100;
         }
     </style>
 </head>
@@ -71,7 +85,6 @@
 
     <div class="header">
         <h1>Gedankenstrom</h1>
-        <div style="font-size: 0.8em; opacity: 0.5;">FÜR UNS ZWEI</div>
     </div>
 
     <div class="search-container">
@@ -80,15 +93,15 @@
 
     <div id="feedArea" style="width: 100%; display: flex; flex-direction: column; align-items: center;">Laden...</div>
 
-    <button class="floating-btn" onclick="openMe()">+</button>
+    <button class="floating-btn" onclick="openEditor()">+</button>
 
-    <div id="editor" class="editor-view">
-        <input type="text" id="et" style="font-size: 1.8em;" placeholder="Titel...">
-        <input type="text" id="ei" style="font-size: 0.9em; color: var(--accent-blue);" placeholder="Bild-URL (Optional)...">
-        <textarea id="ec" style="flex-grow: 1; font-size: 1.2em;" placeholder="Schreibe hier..."></textarea>
+    <div id="editorOverlay" class="editor-view">
+        <input type="text" id="editTitle" style="font-size: 1.8em;" placeholder="Titel...">
+        <input type="text" id="editImg" style="font-size: 0.9em; color: var(--accent-blue);" placeholder="Bild URL (https://...)">
+        <textarea id="editContent" style="flex-grow: 1; font-size: 1.2em;" placeholder="Schreibe etwas..."></textarea>
         <div style="display: flex; justify-content: space-between;">
-            <button onclick="closeMe()" style="background:none; border:none; color:red;">Abbrechen</button>
-            <button onclick="sendIt()" style="background:var(--accent-pink); border:none; padding:10px 30px; border-radius:20px; font-weight:bold;">Teilen</button>
+            <button onclick="closeEditor()" style="color:red; background:none; border:none; cursor:pointer;">Abbrechen</button>
+            <button onclick="saveToFirebase()" style="background:var(--accent-pink); border:none; padding:10px 30px; border-radius:20px; font-weight:bold; cursor:pointer;">Speichern</button>
         </div>
     </div>
 
@@ -106,90 +119,92 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    let postsData = [];
-    let isEdit = false;
-    let editId = '';
+    let localPosts = [];
+    let isEditing = false;
+    let currentId = '';
 
-    window.openMe = (id='', t='', c='', img='') => {
-        isEdit = !!id; editId = id;
-        document.getElementById('et').value = t;
-        document.getElementById('ec').value = c;
-        document.getElementById('ei').value = img;
-        document.getElementById('editor').style.display = 'flex';
+    window.openEditor = (id='', t='', c='', img='') => {
+        isEditing = !!id; currentId = id;
+        document.getElementById('editTitle').value = t;
+        document.getElementById('editContent').value = c;
+        document.getElementById('editImg').value = img;
+        document.getElementById('editorOverlay').style.display = 'flex';
     };
 
-    window.closeMe = () => document.getElementById('editor').style.display = 'none';
+    window.closeEditor = () => document.getElementById('editorOverlay').style.display = 'none';
 
-    window.sendIt = async () => {
-        const t = document.getElementById('et').value;
-        const c = document.getElementById('ec').value;
-        const img = document.getElementById('ei').value;
+    window.saveToFirebase = async () => {
+        const t = document.getElementById('editTitle').value;
+        const c = document.getElementById('editContent').value;
+        const img = document.getElementById('editImg').value;
         if(!t) return;
-
-        if(isEdit) {
-            await updateDoc(doc(db, "pages", editId), { title: t, content: c, imgUrl: img, updatedAt: serverTimestamp() });
-        } else {
-            await addDoc(collection(db, "pages"), { title: t, content: c, imgUrl: img, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-        }
+        if(isEditing) await updateDoc(doc(db, "pages", currentId), { title: t, content: c, imgUrl: img, updatedAt: serverTimestamp() });
+        else await addDoc(collection(db, "pages"), { title: t, content: c, imgUrl: img, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
         location.reload();
     };
 
-    async function load() {
+    async function init() {
         const q = query(collection(db, "pages"), orderBy("createdAt", "desc"));
         const snap = await getDocs(q);
         const cSnap = await getDocs(collection(db, "comments"));
-        postsData = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        draw(postsData, cSnap);
+        localPosts = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        render(localPosts, cSnap);
     }
 
-    function draw(posts, cSnap) {
+    function render(posts, cSnap) {
         const area = document.getElementById('feedArea');
-        let h = "";
+        let html = "";
         posts.forEach(p => {
             const date = p.createdAt?.toDate().toLocaleString('de-DE') || '';
-            const uDate = p.updatedAt?.toDate().toLocaleString('de-DE') || '';
-            h += `<div class="post-card">
-                <div class="post-meta">🗓️ ${date} ${uDate!=date?' | ✏️ '+uDate:''}</div>
+            html += `<div class="post-card">
+                <span class="post-meta">🗓️ ${date}</span>
                 <div class="post-title">${p.title}</div>
                 <div class="post-content">${p.content || ''}</div>
-                ${p.imgUrl ? `<img src="${p.imgUrl}" class="post-img">`:''}
+                ${p.imgUrl ? `<img src="${p.imgUrl}" class="post-img" onerror="this.style.display='none'">` : ''}
+                
                 <div class="comment-area">
-                    <div id="cl-${p.id}">${drawComs(p.id, cSnap)}</div>
-                    <div style="color:var(--text-dim); font-size:0.8em; margin-top:10px;" onclick="addC('${p.id}')">+ Kommentar</div>
+                    <div id="cl-${p.id}">${renderComs(p.id, cSnap)}</div>
+                    <button style="background:none; border:1px dashed #444; color:#888; width:100%; padding:8px; border-radius:10px; margin-top:10px; cursor:pointer;" onclick="addComment('${p.id}')">+ Kommentar</button>
                 </div>
-                <div style="margin-top:15px; font-size:0.75em; opacity:0.3; display:flex; gap:15px;">
-                    <span onclick="openMe('${p.id}','${p.title}','${p.content||''}','${p.imgUrl||''}')">Bearbeiten</span>
-                    <span onclick="del('pages','${p.id}')">Löschen</span>
+
+                <div style="margin-top:15px; border-top:1px solid #222; padding-top:10px; display:flex;">
+                    <button class="btn-action btn-edit" onclick="handleEdit('${p.id}')">📝 Bearbeiten</button>
+                    <button class="btn-action btn-delete" onclick="handleDelete('pages','${p.id}')">🗑️ Löschen</button>
                 </div>
             </div>`;
         });
-        area.innerHTML = h;
+        area.innerHTML = html;
     }
 
-    function drawComs(pid, snap) {
+    function renderComs(pid, snap) {
         let h = "";
         snap.forEach(d => {
             const c = d.data();
-            if(c.pageId === pid) h += `<div class="comment-box">${c.text}
-                <div class="comment-btns"><span onclick="del('comments','${d.id}')">Löschen</span></div>
-            </div>`;
+            if(c.pageId === pid) h += `<div class="comment-box">${c.text} <br> <span style="color:red; font-size:0.7em; cursor:pointer;" onclick="handleDelete('comments','${d.id}')">Löschen</span></div>`;
         });
         return h;
     }
 
-    window.addC = async (pid) => {
-        const txt = prompt("Dein Kommentar:");
+    window.handleEdit = (id) => {
+        const p = localPosts.find(x => x.id === id);
+        if(p) openEditor(p.id, p.title, p.content || '', p.imgUrl || '');
+    };
+
+    window.handleDelete = async (col, id) => {
+        if(confirm("Löschen?")) { await deleteDoc(doc(db, col, id)); location.reload(); }
+    };
+
+    window.addComment = async (pid) => {
+        const txt = prompt("Kommentar:");
         if(txt) { await addDoc(collection(db, "comments"), { pageId: pid, text: txt }); location.reload(); }
     };
 
-    window.del = async (co, id) => { if(confirm("Löschen?")) { await deleteDoc(doc(db, co, id)); location.reload(); } };
-
     window.doSearch = () => {
-        const s = document.getElementById('searchBox').value.toLowerCase();
-        draw(postsData.filter(p => p.title.toLowerCase().includes(s) || (p.content && p.content.toLowerCase().includes(s))), {forEach:()=>{}});
+        const val = document.getElementById('searchBox').value.toLowerCase();
+        render(localPosts.filter(p => p.title.toLowerCase().includes(val) || (p.content && p.content.toLowerCase().includes(val))), {forEach:()=>{}});
     };
 
-    load();
+    init();
 </script>
 </body>
 </html>
