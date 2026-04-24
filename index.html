@@ -27,6 +27,17 @@
 
         .header { text-align: center; margin-bottom: 25px; }
         h1 { font-family: 'Dancing Script', cursive; font-size: 2.8em; color: var(--accent-pink); margin: 0; }
+        
+        /* العبارة الألمانية الجديدة */
+        .sub-header { 
+            font-size: 0.85em; 
+            color: var(--text-gold); 
+            opacity: 0.8; 
+            margin-top: 10px; 
+            font-style: italic;
+            max-width: 300px;
+            line-height: 1.4;
+        }
 
         .search-container { width: 100%; max-width: 550px; margin-bottom: 20px; }
         .search-input {
@@ -38,25 +49,36 @@
             background: var(--card-bg); border-radius: 20px; padding: 20px;
             margin-bottom: 30px; width: 100%; max-width: 550px;
             border: 1px solid rgba(255,255,255,0.03); box-sizing: border-box;
-            position: relative; overflow: hidden;
+            position: relative;
         }
 
         .post-meta { font-size: 0.7em; color: var(--text-dim); margin-bottom: 8px; display: block; }
         .post-title { font-size: 1.4em; font-weight: 600; color: var(--text-gold); margin-bottom: 10px; }
-        .post-content { font-size: 1.05em; line-height: 1.6; color: #ddd; white-space: pre-wrap; margin-bottom: 15px; }
         
-        /* إصلاح حجم الصورة */
-        .post-img { 
-            width: 100%; 
-            max-height: 350px; /* حجم محدد لا تتجاوزه الصورة مهما كانت دقتها */
-            object-fit: cover; /* لضمان عدم تشوه الصورة */
-            border-radius: 12px; 
-            margin-bottom: 15px; 
-            display: block;
-            background: #000; /* خلفية سوداء تظهر فقط إذا كانت الصورة شفافة */
+        /* تنسيق النصوص الطويلة */
+        .post-content-wrapper {
+            position: relative;
+            max-height: 160px; /* الارتفاع الأقصى قبل القص */
+            overflow: hidden;
+            transition: max-height 0.4s ease;
         }
-        /* إخفاء الصورة تماماً إذا كان الرابط مكسور لكي لا تظهر الأيقونة المزعجة */
-        .post-img:not([src]), .post-img[src=""] { display: none; }
+        .post-content-wrapper.expanded {
+            max-height: none;
+        }
+        .post-content { font-size: 1.05em; line-height: 1.6; color: #ddd; white-space: pre-wrap; }
+
+        .read-more-btn {
+            background: none; border: none; color: var(--accent-pink);
+            padding: 5px 0; cursor: pointer; font-size: 0.9em; font-weight: 600;
+            display: none; /* تظهر فقط بالـ JS إذا كان النص طويلاً */
+            margin-bottom: 10px;
+        }
+
+        .post-img { 
+            width: 100%; max-height: 350px; object-fit: cover; 
+            border-radius: 12px; margin-top: 10px; margin-bottom: 15px; 
+            display: block; background: #000; 
+        }
 
         .comment-area { border-top: 1px solid #252525; padding-top: 15px; margin-top: 10px; }
         .comment-box { 
@@ -85,6 +107,9 @@
 
     <div class="header">
         <h1>Gedankenstrom</h1>
+        <div class="sub-header">
+            Dies ist ein Garten für unsere Gedanken, es ist unsere eigene Welt, es ist das goldene System.
+        </div>
     </div>
 
     <div class="search-container">
@@ -159,7 +184,12 @@
             html += `<div class="post-card">
                 <span class="post-meta">🗓️ ${date}</span>
                 <div class="post-title">${p.title}</div>
-                <div class="post-content">${p.content || ''}</div>
+                
+                <div class="post-content-wrapper" id="wrapper-${p.id}">
+                    <div class="post-content" id="content-${p.id}">${p.content || ''}</div>
+                </div>
+                <button class="read-more-btn" id="btn-${p.id}" onclick="toggleReadMore('${p.id}')">Mehr anzeigen...</button>
+
                 ${p.imgUrl ? `<img src="${p.imgUrl}" class="post-img" onerror="this.style.display='none'">` : ''}
                 
                 <div class="comment-area">
@@ -174,7 +204,30 @@
             </div>`;
         });
         area.innerHTML = html;
+        // بعد العرض، نتحقق من النصوص الطويلة لإظهار الأزرار
+        posts.forEach(p => checkTextHeight(p.id));
     }
+
+    window.checkTextHeight = (id) => {
+        const wrapper = document.getElementById('wrapper-' + id);
+        const content = document.getElementById('content-' + id);
+        const btn = document.getElementById('btn-' + id);
+        if (content.scrollHeight > 160) {
+            btn.style.display = 'block';
+        }
+    };
+
+    window.toggleReadMore = (id) => {
+        const wrapper = document.getElementById('wrapper-' + id);
+        const btn = document.getElementById('btn-' + id);
+        if (wrapper.classList.contains('expanded')) {
+            wrapper.classList.remove('expanded');
+            btn.innerText = "Mehr anzeigen...";
+        } else {
+            wrapper.classList.add('expanded');
+            btn.innerText = "Weniger anzeigen";
+        }
+    };
 
     function renderComs(pid, snap) {
         let h = "";
