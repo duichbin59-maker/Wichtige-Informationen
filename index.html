@@ -28,15 +28,9 @@
         .header { text-align: center; margin-bottom: 25px; }
         h1 { font-family: 'Dancing Script', cursive; font-size: 2.8em; color: var(--accent-pink); margin: 0; }
         
-        /* العبارة الألمانية الجديدة */
         .sub-header { 
-            font-size: 0.85em; 
-            color: var(--text-gold); 
-            opacity: 0.8; 
-            margin-top: 10px; 
-            font-style: italic;
-            max-width: 300px;
-            line-height: 1.4;
+            font-size: 0.85em; color: var(--text-gold); opacity: 0.8; 
+            margin-top: 10px; font-style: italic; max-width: 300px; line-height: 1.4;
         }
 
         .search-container { width: 100%; max-width: 550px; margin-bottom: 20px; }
@@ -55,23 +49,27 @@
         .post-meta { font-size: 0.7em; color: var(--text-dim); margin-bottom: 8px; display: block; }
         .post-title { font-size: 1.4em; font-weight: 600; color: var(--text-gold); margin-bottom: 10px; }
         
-        /* تنسيق النصوص الطويلة */
-        .post-content-wrapper {
+        /* تنسيق المنشورات والتعليقات الطويلة */
+        .content-wrapper {
             position: relative;
-            max-height: 160px; /* الارتفاع الأقصى قبل القص */
+            max-height: 160px; 
             overflow: hidden;
             transition: max-height 0.4s ease;
         }
-        .post-content-wrapper.expanded {
-            max-height: none;
+        .comment-wrapper {
+            max-height: 80px; /* حد أقصر للتعليقات لتبقى مرتبة */
+            overflow: hidden;
+            transition: max-height 0.3s ease;
         }
-        .post-content { font-size: 1.05em; line-height: 1.6; color: #ddd; white-space: pre-wrap; }
+        .expanded { max-height: none !important; }
 
-        .read-more-btn {
+        .post-content, .comment-text { font-size: 1.05em; line-height: 1.6; color: #ddd; white-space: pre-wrap; }
+        .comment-text { font-size: 0.95em; }
+
+        .show-btn {
             background: none; border: none; color: var(--accent-pink);
-            padding: 5px 0; cursor: pointer; font-size: 0.9em; font-weight: 600;
-            display: none; /* تظهر فقط بالـ JS إذا كان النص طويلاً */
-            margin-bottom: 10px;
+            padding: 5px 0; cursor: pointer; font-size: 0.85em; font-weight: 600;
+            display: none; margin-bottom: 10px;
         }
 
         .post-img { 
@@ -82,8 +80,8 @@
 
         .comment-area { border-top: 1px solid #252525; padding-top: 15px; margin-top: 10px; }
         .comment-box { 
-            background: rgba(255,255,255,0.03); padding: 10px; border-radius: 10px; 
-            margin-bottom: 8px; font-size: 0.9em; border-left: 2px solid var(--accent-pink);
+            background: rgba(255,255,255,0.03); padding: 12px; border-radius: 10px; 
+            margin-bottom: 8px; border-left: 2px solid var(--accent-pink);
         }
 
         .btn-action { background: none; border: none; font-size: 0.85em; cursor: pointer; font-weight: 500; padding: 8px 0; }
@@ -107,9 +105,7 @@
 
     <div class="header">
         <h1>Gedankenstrom</h1>
-        <div class="sub-header">
-            Dies ist ein Garten für unsere Gedanken, es ist unsere eigene Welt, es ist das goldene System.
-        </div>
+        <div class="sub-header">Dies ist ein Garten für unsere Gedanken, es ist unsere eigene Welt, es ist das goldene System.</div>
     </div>
 
     <div class="search-container">
@@ -185,10 +181,10 @@
                 <span class="post-meta">🗓️ ${date}</span>
                 <div class="post-title">${p.title}</div>
                 
-                <div class="post-content-wrapper" id="wrapper-${p.id}">
-                    <div class="post-content" id="content-${p.id}">${p.content || ''}</div>
+                <div class="content-wrapper" id="p-wrap-${p.id}">
+                    <div class="post-content" id="p-con-${p.id}">${p.content || ''}</div>
                 </div>
-                <button class="read-more-btn" id="btn-${p.id}" onclick="toggleReadMore('${p.id}')">Mehr anzeigen...</button>
+                <button class="show-btn" id="p-btn-${p.id}" onclick="toggleExpand('p-wrap-${p.id}', 'p-btn-${p.id}')">Mehr anzeigen...</button>
 
                 ${p.imgUrl ? `<img src="${p.imgUrl}" class="post-img" onerror="this.style.display='none'">` : ''}
                 
@@ -204,39 +200,50 @@
             </div>`;
         });
         area.innerHTML = html;
-        // بعد العرض، نتحقق من النصوص الطويلة لإظهار الأزرار
-        posts.forEach(p => checkTextHeight(p.id));
+        posts.forEach(p => checkHeight('p-con-' + p.id, 'p-btn-' + p.id, 160));
+        // تفعيل فحص التعليقات بعد الرسم
+        setTimeout(() => {
+            cSnap.forEach(d => checkHeight('c-con-' + d.id, 'c-btn-' + d.id, 80));
+        }, 100);
     }
-
-    window.checkTextHeight = (id) => {
-        const wrapper = document.getElementById('wrapper-' + id);
-        const content = document.getElementById('content-' + id);
-        const btn = document.getElementById('btn-' + id);
-        if (content.scrollHeight > 160) {
-            btn.style.display = 'block';
-        }
-    };
-
-    window.toggleReadMore = (id) => {
-        const wrapper = document.getElementById('wrapper-' + id);
-        const btn = document.getElementById('btn-' + id);
-        if (wrapper.classList.contains('expanded')) {
-            wrapper.classList.remove('expanded');
-            btn.innerText = "Mehr anzeigen...";
-        } else {
-            wrapper.classList.add('expanded');
-            btn.innerText = "Weniger anzeigen";
-        }
-    };
 
     function renderComs(pid, snap) {
         let h = "";
         snap.forEach(d => {
             const c = d.data();
-            if(c.pageId === pid) h += `<div class="comment-box">${c.text} <br> <span style="color:red; font-size:0.7em; cursor:pointer;" onclick="handleDelete('comments','${d.id}')">Löschen</span></div>`;
+            if(c.pageId === pid) {
+                h += `
+                <div class="comment-box">
+                    <div class="comment-wrapper" id="c-wrap-${d.id}">
+                        <div class="comment-text" id="c-con-${d.id}">${c.text}</div>
+                    </div>
+                    <button class="show-btn" id="c-btn-${d.id}" onclick="toggleExpand('c-wrap-${d.id}', 'c-btn-${d.id}')">Mehr anzeigen...</button>
+                    <div style="margin-top:5px;"><span style="color:red; font-size:0.7em; cursor:pointer;" onclick="handleDelete('comments','${d.id}')">Löschen</span></div>
+                </div>`;
+            }
         });
         return h;
     }
+
+    window.checkHeight = (conId, btnId, limit) => {
+        const con = document.getElementById(conId);
+        const btn = document.getElementById(btnId);
+        if (con && con.scrollHeight > limit) {
+            btn.style.display = 'block';
+        }
+    };
+
+    window.toggleExpand = (wrapId, btnId) => {
+        const wrap = document.getElementById(wrapId);
+        const btn = document.getElementById(btnId);
+        if (wrap.classList.contains('expanded')) {
+            wrap.classList.remove('expanded');
+            btn.innerText = "Mehr anzeigen...";
+        } else {
+            wrap.classList.add('expanded');
+            btn.innerText = "Weniger anzeigen";
+        }
+    };
 
     window.handleEdit = (id) => {
         const p = localPosts.find(x => x.id === id);
@@ -249,7 +256,7 @@
 
     window.addComment = async (pid) => {
         const txt = prompt("Kommentar:");
-        if(txt) { await addDoc(collection(db, "comments"), { pageId: pid, text: txt }); location.reload(); }
+        if(txt) { await addDoc(collection(db, "comments"), { pageId: pid, text: txt, createdAt: serverTimestamp() }); location.reload(); }
     };
 
     window.doSearch = () => {
